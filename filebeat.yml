@@ -1,0 +1,516 @@
+filebeat.inputs:
+  - type: container
+    enabled: ${container:false}
+    paths:
+      - "/var/lib/docker/containers/*/*.log"
+      #stream: "stdout"
+      #ids:
+      #  - "*"
+    exclude_files: ['\.gz$']
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+    #  ignore_older: 10m
+    multiline.pattern: '^[[:space:]]+(at|\.{3})\b|^Caused by:'
+    multiline.negate: false
+    multiline.match: after
+  - type: log
+    enabled: ${custom_path:false}
+    paths:
+      - "/var/log/custom.log"
+    #    - "/var/log/jenkins/jobs/*/builds/*/log
+    #stream: "stdout"
+    #ids:
+    #  - "*"
+    exclude_files: ['\.gz$']
+#  ignore_older: 10m
+filebeat.modules:
+  #-------------------------------- Azure Modules --------------------------------
+  - module: azure
+    activitylogs:
+      enabled: ${azure_activitylogs:false}
+      var:
+        eventhub: '${EVENHUB_NAME:""}'
+        consumer_group: "$Default"
+        connection_string: '${CONNECTION_STRING:""}'
+        storage_account: '${STORAGE_ACCOUNT_NAME:""}'
+        storage_account_key: '${ACCESS_KEY:""}'
+        resource_manager_endpoint: ""
+    #processors:
+    # decode the log field (sub JSON document) if JSON encoded, then maps it's fields to elasticsearch fields
+    #  - decode_json_fields:
+    #     fields: ["message"]
+    #     target: ""
+    # overwrite existing target elasticsearch fields while decoding json fields
+    #     overwrite_keys: true
+    signinlogs:
+      enabled: ${azure_signinlogs:false}
+      var:
+              #eventhub: "singnin-logs"
+        eventhub: '${EVENHUB_NAME:""}'
+        consumer_group: "$Default"
+        connection_string: '${CONNECTION_STRING:""}'
+        storage_account: '${STORAGE_ACCOUNT_NAME:""}'
+        storage_account_key: '${ACCESS_KEY:""}'
+    #       resource_manager_endpoint: ""
+    auditlogs:
+      enabled: ${azure_auditlogs:false}
+      var:
+              #        eventhub: "audit-logs"
+        eventhub: '${EVENHUB_NAME:""}'
+        consumer_group: "$Default"
+        connection_string: '${CONNECTION_STRING:""}'
+        storage_account: '${STORAGE_ACCOUNT_NAME:""}'
+        storage_account_key: '${ACCESS_KEY:""}'
+        resource_manager_endpoint: ""
+  #---------------------------------AWS Module -----------------------------------
+  - module: aws
+    cloudtrail:
+      enabled: ${cloudtrail:false}
+      var.queue_url: '${CLOUDTRAIL_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${CLOUDTRAIL_ROLE_ARN:""}'
+
+    cloudwatch:
+      enabled: ${cloudwatch:false}
+      var.queue_url: '${CLOUDWATCH_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${CLOUDWATCH_ROLE_ARN:""}'
+
+    ec2:
+      enabled: ${ec2:false}
+      var.queue_url: '${EC2_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${EC2_ROLE_ARN:""}'
+
+    elb:
+      enabled: ${elb:false}
+      var.queue_url: '${ELB_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${ELB_ROLE_ARN:""}'
+
+    s3access:
+      enabled: ${s3access:false}
+      var.queue_url: '${S3ACCESS_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${S3ACCESS_ROLE_ARN:""}'
+
+    vpcflow:
+      enabled: ${vpcflow:false}
+      var.queue_url: '${VPCFLOW_QUEUE_URL:""}'
+      #var.shared_credential_file: /etc/filebeat/aws_credentials
+      #var.credential_profile_name: fb-aws
+      var.access_key_id: '${AWS_ACCESS_KEY_ID:""}'
+      var.secret_access_key: '${AWS_SECRET_ACCESS_KEY:""}'
+      #var.session_token: session_token
+      #var.visibility_timeout: 300s
+      #var.api_timeout: 120s
+      var.endpoint: '${ENDPOINT:"amazonaws.com"}'
+      var.role_arn: '${VPCFLOW_ROLE_ARN:""}'
+  #-------------------------------- System Module --------------------------------
+  - module: system
+    # Syslog
+    syslog:
+      enabled: ${system:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Authorization logs
+    auth:
+      enabled: ${system:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #-------------------------------- Apache Module --------------------------------
+  - module: apache
+    # Access logs
+    access:
+      enabled: ${apache:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Error logs
+    error:
+      enabled: ${apache:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #-------------------------------- Auditd Module --------------------------------
+  - module: auditd
+    log:
+      enabled: ${auditd:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #---------------------------- Elasticsearch Module ----------------------------
+  - module: elasticsearch
+    # Server log
+    server:
+      enabled: ${elasticsearch:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+    gc:
+      enabled: ${elasticsearch:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+    audit:
+      enabled: ${elasticsearch:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+    slowlog:
+      enabled: ${elasticsearch:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+    deprecation:
+      enabled: ${elasticsearch:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #------------------------------- HAProxy Module -------------------------------
+  - module: haproxy
+    # All logs
+    log:
+      enabled: ${haproxy:false}
+      # Set which input to use between syslog (default) or file.
+      #var.input:
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #-------------------------------- Icinga Module --------------------------------
+  - module: icinga
+    # Main logs
+    main:
+      enabled: ${icinga:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Debug logs
+    debug:
+      enabled: ${icinga:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Startup logs
+    startup:
+      enabled: ${icinga:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #--------------------------------- IIS Module ---------------------------------
+  - module: iis
+    # Access logs
+    access:
+      enabled: ${iis:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Error logs
+    error:
+      enabled: ${iis:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #-------------------------------- Kafka Module --------------------------------
+  - module: kafka
+    # All logs
+    log:
+      enabled: ${kafka:false}
+      # Set custom paths for Kafka. If left empty,
+      # Filebeat will look under /opt.
+      #var.kafka_home:
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #-------------------------------- Kibana Module --------------------------------
+  - module: kibana
+    # All logs
+    log:
+      enabled: ${kibana:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #------------------------------- Logstash Module -------------------------------
+  - module: logstash
+    # logs
+    log:
+      enabled: ${logstash:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      # var.paths:
+
+    # Slow logs
+    slowlog:
+      enabled: ${logstash:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #------------------------------- Mongodb Module -------------------------------
+  - module: mongodb
+    # Logs
+    log:
+      enabled: ${mongodb:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #-------------------------------- MySQL Module --------------------------------
+  - module: mysql
+    # Error logs
+    error:
+      enabled: ${mysql:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Slow logs
+    slowlog:
+      enabled: ${mysql:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #--------------------------------- NATS Module ---------------------------------
+  - module: nats
+    # All logs
+    log:
+      enabled: ${nats:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+
+  #-------------------------------- Nginx Module --------------------------------
+  - module: nginx
+    # Access logs
+    access:
+      enabled: ${nginx:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+    # Error logs
+    error:
+      enabled: ${nginx:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+
+    # Ingress-nginx controller logs. This is disabled by default. It could be used in Kubernetes environments to parse ingress-nginx logs
+    #ingress_controller:
+    #  enabled: false
+    #
+    #  # Set custom paths for the log files. If left empty,
+    #  # Filebeat will choose the paths depending on your OS.
+    #  #var.paths:
+  #------------------------------- Osquery Module -------------------------------
+  - module: osquery
+    result:
+      enabled: ${osquery:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # If true, all fields created by this module are prefixed with
+      # `osquery.result`. Set to false to copy the fields in the root
+      # of the document. The default is true.
+      #var.use_namespace: true
+
+  #------------------------------ PostgreSQL Module ------------------------------
+  - module: postgresql
+    # Logs
+    log:
+      enabled: ${postgresql:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+  #-------------------------------- Redis Module --------------------------------
+  - module: redis
+    # Main logs
+    log:
+      enabled: ${redis:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths: ["/var/log/redis/redis-server.log*"]
+
+    # Slow logs, retrieved via the Redis API (SLOWLOG)
+    slowlog:
+      enabled: ${redis:false}
+      # The Redis hosts to connect to.
+      #var.hosts: ["localhost:6379"]
+      # Optional, the password to use when connecting to Redis.
+      #var.password:
+
+  #----------------------------- Google Santa Module -----------------------------
+  - module: santa
+    log:
+      enabled: ${santa:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the the default path.
+      #var.paths:
+
+  #------------------------------- Traefik Module -------------------------------
+  - module: traefik
+    # Access logs
+    access:
+      enabled: ${traefik:false}
+      # Set custom paths for the log files. If left empty,
+      # Filebeat will choose the paths depending on your OS.
+      #var.paths:
+      # Input configuration (advanced). Any input configuration option
+      # can be added under this section.
+      #input:
+
+processors:
+  # decode the log field (sub JSON document) if JSON encoded, then maps it's fields to elasticsearch fields
+  #- decode_json_fields:
+  #    fields: ["log", "message"]
+  #    target: ""
+  # overwrite existing target elasticsearch fields while decoding json fields
+  #    overwrite_keys: true
+  - add_fields:
+      target: host
+      fields:
+        hostname: '${HOSTNAME:"null"}'
+        apiToken: '${API_TOKEN:"null"}'
+
+      #filebeat.config.modules:
+      #path: ${path.config}/modules.d/*.yml
+      #reload.enabled: false
+
+# setup filebeat to send output to logstash
+output.logstash:
+  enabled: true
+  hosts: '${giggsoendpoint:"localhost:5044"}'
+
+output.elasticsearch:
+  enabled: false
+  # Array of hosts to connect to.
+  hosts: '${giggsoendpoint:"localhost:9200"}'
+  username: "elastic"
+  password: "changeme"
+  index: "gglogs"
+  #setup.kibana:
+  #host: "13.92.225.227:5601"
+  
+# -------------------------------- Kafka Output --------------------------------
+#output.kafka:
+  # Boolean flag to enable or disable the output module.
+  #  enabled: true
+  #hosts: ["207.46.231.117:9092"]
+  #  hosts: '${giggsoendpoint:"localhost:9092"}'
+  #  topic: '${HOSTNAME}-filebeat'
+
+
+setup.template:
+  name: "gglogs"
+  pattern: "gglogs*"
+  overwrite: true
+  enabled: false
+
+setup.ilm.enabled: false
